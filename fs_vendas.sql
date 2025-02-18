@@ -72,14 +72,19 @@ tb_base AS (
           SUM(ip.vlPreco) AS vlPreco,
           SUM(ip.vlFrete) AS vlFrete,
           COUNT(ip.idPedidoItem) AS qtdeItensPedido
+
   FROM    silver.olist.vendedor as v
-          LEFT JOIN silver.olist.item_pedido AS ip
-            ON v.idVendedor = ip.idVendedor
-          LEFT JOIN silver.olist.pedido AS p
-            ON ip.idPedido = p.idPedido
-          LEFT JOIN silver.olist.pagamento_pedido AS pp
-            ON ip.idPedido = pp.idPedido
-  WHERE   p.dtPedido < '2017-06-01'
+
+  LEFT JOIN silver.olist.item_pedido AS ip
+  ON v.idVendedor = ip.idVendedor
+
+  LEFT JOIN silver.olist.pedido AS p
+  ON ip.idPedido = p.idPedido
+
+  LEFT JOIN silver.olist.pagamento_pedido AS pp
+  ON ip.idPedido = pp.idPedido
+
+  WHERE p.dtPedido < '2017-06-01'
   GROUP BY ALL
 ),
 
@@ -104,7 +109,12 @@ tb_feat_vendas AS (
           SUM(vlFrete) / SUM(vlPreco) AS indFretePreco,
           AVG(vlFrete / vlPreco) AS indMedioFretePrecoPorPedido,
           SUM(CASE WHEN DATE_DIFF(dtEstimativaEntrega, dtEntrega) >= 0 THEN 1 ELSE 0 END) / COUNT(dtEntrega) AS pctPedidosEntreguesNoPrazo,
-          SUM(CASE WHEN COALESCE(nrParcelas, 1) > 1 THEN 1 ELSE 0 END) / COUNT(idPedido) AS pctPedidosParcelados
+          SUM(CASE WHEN COALESCE(nrParcelas, 1) > 1 THEN 1 ELSE 0 END) / COUNT(idPedido) AS pctPedidosParcelados,
+        COUNT(CASE WHEN dtPedido >= '2017-06-01' - INTERVAL 28 DAY THEN idPedido END) AS qtdePedidoD28,
+        COUNT(CASE WHEN dtPedido >= '2017-06-01' - INTERVAL 14 DAY THEN idPedido END) AS qtdePedidoD14,
+        COUNT(CASE WHEN dtPedido >= '2017-06-01' - INTERVAL 7 DAY THEN idPedido END) AS qtdePedidoD7,
+        COUNT(CASE WHEN dtPedido >= '2017-06-01' - INTERVAL 28 DAY THEN idPedido END) / COUNT(CASE WHEN dtPedido >= '2017-06-01' - INTERVAL 56 DAY AND dtPedido < '2017-06-01' - INTERVAL 28 DAY THEN idPedido END) AS crescimentoD28,
+        count(distinct CASE WHEN dtPedido >= '2017-06-01' - interval 84 DAY THEN idPedido END) / 3 AS avgPedidoM3
   FROM    tb_base
   GROUP BY dtRef,
           idVendedor
@@ -120,7 +130,6 @@ tb_daily AS (
 
 tb_lag AS (
   SELECT  *,
-          LAG(dtPedido) OVER (PARTITION BY idVendedor ORDER BY dtPedido) AS dtPedidoAnterior,
           LAG(dtPedido) OVER (PARTITION BY idVendedor ORDER BY dtPedido DESC) AS dtProximoPedido
   FROM    tb_daily
 ),
@@ -130,62 +139,40 @@ tb_feat_vendas_lag AS (
           AVG(DATE_DIFF(tb_lag.dtProximoPedido, tb_lag.dtPedido)) AS qtdeMediaDiasEntrePedidos
   FROM    tb_lag
   GROUP BY idVendedor
-)
-
-SELECT  tb_feat_vendas.*,
-        tb_feat_vendas_lag.qtdeMediaDiasEntrePedidos
-FROM    tb_feat_vendas
-        LEFT JOIN tb_feat_vendas_lag
-          ON tb_feat_vendas.idVendedor = tb_feat_vendas_lag.idVendedor;
-
--- COMMAND ----------
-
-WITH
-
-tb_base AS (
-  SELECT  v.idVendedor,
-          ip.idPedido,
-          p.dtPedido,
-          pp.descTipoPagamento,
-          pp.nrParcelas,
-          SUM(ip.vlPreco) AS vlReceita
-  FROM    silver.olist.vendedor as v
-          LEFT JOIN silver.olist.item_pedido AS ip
-            ON v.idVendedor = ip.idVendedor
-          LEFT JOIN silver.olist.pedido AS p
-            ON ip.idPedido = p.idPedido
-          LEFT JOIN silver.olist.pagamento_pedido AS pp
-            ON ip.idPedido = pp.idPedido
-  WHERE   p.dtPedido < '2017-06-01'
-  GROUP BY ALL
 ),
 
--- Incluir os atributos da feature store pagamento na tabela
-tb_feat_pagamento AS (
-  SELECT  idVendedor,
-          -- GMV por tipo de pagamento
-          SUM(CASE WHEN descTipoPagamento = 'boleto' THEN vlReceita ELSE 0 END) AS gmvBoleto,
-          SUM(CASE WHEN descTipoPagamento = 'credit_card' THEN vlReceita ELSE 0 END) AS gmvCredito,
-          SUM(CASE WHEN descTipoPagamento = 'debit_card' THEN vlReceita ELSE 0 END) AS gmvDebito,
-          SUM(CASE WHEN descTipoPagamento = 'voucher' THEN vlReceita ELSE 0 END) AS gmvVoucher,
-          SUM(CASE WHEN descTipoPagamento = 'not_defined' THEN vlReceita ELSE 0 END) AS gmvNaoDefinido,
-          -- % pedidos por tipo de pagamento
-          SUM(CASE WHEN descTipoPagamento = 'boleto' THEN 1 ELSE 0 END) 
-            / COUNT(DISTINCT idPedido) AS pctPedidosBoleto,
-          SUM(CASE WHEN descTipoPagamento = 'credit_card' THEN 1 ELSE 0 END) 
-            / COUNT(DISTINCT idPedido) AS pctPedidosCredito,
-          SUM(CASE WHEN descTipoPagamento = 'debit_card' THEN 1 ELSE 0 END) 
-            / COUNT(DISTINCT idPedido) AS pctPedidosDebito,
-          SUM(CASE WHEN descTipoPagamento = 'voucher' THEN 1 ELSE 0 END) 
-            / COUNT(DISTINCT idPedido) AS pctPedidosVoucher,
-          SUM(CASE WHEN descTipoPagamento = 'not_defined' THEN 1 ELSE 0 END) 
-            / COUNT(DISTINCT idPedido) AS pctPedidosNaoDefinido,
-          -- Média da quantidade de parcelas (excluindo à vista)
-          AVG(CASE WHEN nrParcelas > 1 THEN nrParcelas END) AS mediaQtdeParcelas
-  FROM tb_base
-  GROUP BY idVendedor
+tb_weekly AS (
+
+SELECT idVendedor,
+        year(dtPedido) || weekofyear(dtPedido) AS dtWeek,
+        count(distinct idPedido) AS qtdePedidoSemana
+
+FROM tb_base
+GROUP BY ALL
+),
+
+summary_weekly AS (
+SELECT idVendedor,
+       stddev_pop(qtdePedidoSemana) AS stdPedidoSemana
+FROM tb_weekly
+GROUP BY ALL
+
+),
+
+tb_final AS (
+
+SELECT  t1.*,
+        t2.qtdeMediaDiasEntrePedidos,
+        t3.stdPedidoSemana
+FROM tb_feat_vendas AS t1
+
+LEFT JOIN tb_feat_vendas_lag AS t2
+ON t1.idVendedor = t2.idVendedor
+
+LEFT JOIN summary_weekly as t3
+ON t1.idVendedor = t3.idVendedor
+
 )
 
-SELECT  '2017-06-01' AS dtRef,
-        *
-FROM    tb_feat_pagamento;
+SELECT *
+FROM tb_final
