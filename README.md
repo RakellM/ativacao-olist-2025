@@ -3,8 +3,8 @@ Modelo para previsão de venda para vendedores da olist
 
 ## Grupos
 
-Vendedor   - Lucas e Jessica
-Avalizacao - Raquel e Julia
-Pagamento  - Ana, gui, dani
-Produto    - Paula dssfsdfdssf
-Cliente    - André, kelly, Claudia, Fernando, Thyago
+- Vendedor   - Lucas, Jessica, Alexandre, Eduarto, Murilo Kopi, Leandro
+- Avalizacao - Raquel, Julia, Igor, Manuel, Marcelo
+- Pagamento  - Ana, Gui, Dani, Carol, Emanuel
+- Produto    - Paula, George, Pedro, Gabriel, Gabriela, Juliana
+- Cliente    - André, Kelly, Claudia, Fernando, Thyago
