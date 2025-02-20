@@ -1,65 +1,9 @@
 -- Databricks notebook source
--- MAGIC %md
--- MAGIC Todas varivaveis com m-1, m-2, m-3 ....
--- MAGIC
--- MAGIC
--- MAGIC Ok - RecenciaPedidos = qtde de dias desde o último pedido?
--- MAGIC
--- MAGIC Ok - TempoDesdePrimeiroPedido = qtde de dias desde o primeiro pedido
--- MAGIC
--- MAGIC FrequenciaConsistencia ???
--- MAGIC
--- MAGIC Ok - TicketMedio = (Frete + Preco) médio?
--- MAGIC
--- MAGIC Ok - QtdPedido
--- MAGIC
--- MAGIC Ok - vlFreteMedia = frete médio por pedido?
--- MAGIC
--- MAGIC Ok - vlPrecoMedia = preço médio por pedido?
--- MAGIC
--- MAGIC VariabilidadeFrequenciaPedidos ???
--- MAGIC
--- MAGIC TaxaDeCrescimentoPedidos ???
--- MAGIC
--- MAGIC Ok - TempoMédioEntrePedidos
--- MAGIC
--- MAGIC avgPedidoMes3
--- MAGIC
--- MAGIC A média de preço por pedido do vendedor = TicketMedio?
--- MAGIC
--- MAGIC Ok - teve pedido ou não nos últimos 6 meses
--- MAGIC
--- MAGIC Número de meses sem vendas nos últimos 12 meses
--- MAGIC
--- MAGIC Ok - Intervalo (dias) entre as datas do primeiro e último pedido
--- MAGIC
--- MAGIC Ok - qtd_itens_ate_hoje
--- MAGIC
--- MAGIC Indicador de tendência de venda nos últimos 3 meses (crescente, estável ou decrescente)
--- MAGIC
--- MAGIC Ok - Faturamento (GMV) - já está na fs_pagamento
--- MAGIC
--- MAGIC Ok - % de aprovação pedido
--- MAGIC
--- MAGIC Meses seguidos com pedido
--- MAGIC
--- MAGIC Ok - Média de dias entre a data de pedido e a estimativa de entrega
--- MAGIC
--- MAGIC Ok - Total de Frete
--- MAGIC
--- MAGIC Ok - Frete./VlProduto (índice médio)
--- MAGIC
--- MAGIC Ok - % de entrega no prazo
--- MAGIC
--- MAGIC Ok - % pedidos parcelados
--- MAGIC
--- MAGIC Quantos dias o vendedor precisa, em média, para fazer uma venda - TempoMédioEntrePedidos?
+DROP TABLE IF EXISTS sandbox.asn.fs_seller_vendas_t5;
 
--- COMMAND ----------
+CREATE TABLE IF NOT EXISTS sandbox.asn.fs_seller_vendas_t5
 
-WITH
-
-tb_base AS (
+WITH tb_base AS (
   SELECT  '2017-06-01' AS dtRef,
           v.idVendedor AS idVendedor,
           ip.idPedido AS idPedido,
