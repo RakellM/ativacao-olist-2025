@@ -1,10 +1,6 @@
--- Databricks notebook source
-DROP TABLE IF EXISTS sandbox.asn.fs_seller_vendas_t5;
-
-CREATE TABLE IF NOT EXISTS sandbox.asn.fs_seller_vendas_t5
 
 WITH tb_base AS (
-  SELECT  '2017-06-01' AS dtRef,
+  SELECT  '{date}' AS dtRef,
           v.idVendedor AS idVendedor,
           ip.idPedido AS idPedido,
           DATE(p.dtPedido) AS dtPedido,
@@ -28,7 +24,7 @@ WITH tb_base AS (
   LEFT JOIN silver.olist.pagamento_pedido AS pp
   ON ip.idPedido = pp.idPedido
 
-  WHERE p.dtPedido < '2017-06-01'
+  WHERE p.dtPedido < '{date}'
   GROUP BY ALL
 ),
 
@@ -44,7 +40,7 @@ tb_feat_vendas AS (
           AVG(vlPreco + vlFrete) AS vlTicketMedio,
           AVG(vlPreco) AS vlMediaPreco,
           AVG(vlFrete) AS vlMediaFrete,
-          MAX(dtPedido) >= DATE('2017-06-01') - INTERVAL 6 MONTH AS inPedido6Meses,
+          MAX(dtPedido) >= DATE('{date}') - INTERVAL 6 MONTH AS inPedido6Meses,
           DATE_DIFF(MAX(dtPedido), MIN(dtPedido)) AS qtdeDiasPrimeiroUltimoPedido,
           SUM(COALESCE(qtdeItensPedido, 0)) AS qtdeItensPedido,
           SUM(CASE WHEN dtAprovacao IS NULL THEN 0 ELSE 1 END) / COUNT(idPedido) AS pctPedidosAprovados,
@@ -54,11 +50,11 @@ tb_feat_vendas AS (
           AVG(vlFrete / vlPreco) AS indMedioFretePrecoPorPedido,
           SUM(CASE WHEN DATE_DIFF(dtEstimativaEntrega, dtEntrega) >= 0 THEN 1 ELSE 0 END) / COUNT(dtEntrega) AS pctPedidosEntreguesNoPrazo,
           SUM(CASE WHEN COALESCE(nrParcelas, 1) > 1 THEN 1 ELSE 0 END) / COUNT(idPedido) AS pctPedidosParcelados,
-        COUNT(CASE WHEN dtPedido >= '2017-06-01' - INTERVAL 28 DAY THEN idPedido END) AS qtdePedidoD28,
-        COUNT(CASE WHEN dtPedido >= '2017-06-01' - INTERVAL 14 DAY THEN idPedido END) AS qtdePedidoD14,
-        COUNT(CASE WHEN dtPedido >= '2017-06-01' - INTERVAL 7 DAY THEN idPedido END) AS qtdePedidoD7,
-        COUNT(CASE WHEN dtPedido >= '2017-06-01' - INTERVAL 28 DAY THEN idPedido END) / COUNT(CASE WHEN dtPedido >= '2017-06-01' - INTERVAL 56 DAY AND dtPedido < '2017-06-01' - INTERVAL 28 DAY THEN idPedido END) AS crescimentoD28,
-        count(distinct CASE WHEN dtPedido >= '2017-06-01' - interval 84 DAY THEN idPedido END) / 3 AS avgPedidoM3
+        COUNT(CASE WHEN dtPedido >= '{date}' - INTERVAL 28 DAY THEN idPedido END) AS qtdePedidoD28,
+        COUNT(CASE WHEN dtPedido >= '{date}' - INTERVAL 14 DAY THEN idPedido END) AS qtdePedidoD14,
+        COUNT(CASE WHEN dtPedido >= '{date}' - INTERVAL 7 DAY THEN idPedido END) AS qtdePedidoD7,
+        COUNT(CASE WHEN dtPedido >= '{date}' - INTERVAL 28 DAY THEN idPedido END) / COUNT(CASE WHEN dtPedido >= '{date}' - INTERVAL 56 DAY AND dtPedido < '{date}' - INTERVAL 28 DAY THEN idPedido END) AS crescimentoD28,
+        count(distinct CASE WHEN dtPedido >= '{date}' - interval 84 DAY THEN idPedido END) / 3 AS avgPedidoM3
   FROM    tb_base
   GROUP BY dtRef,
           idVendedor
