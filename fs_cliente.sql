@@ -1,7 +1,3 @@
--- Databricks notebook source
-DROP TABLE IF EXISTS sandbox.asn.fs_seller_cliente_t5;
-
-CREATE TABLE IF NOT EXISTS sandbox.asn.fs_seller_cliente_t5
 
 WITH transacoes AS (
     SELECT  
@@ -17,7 +13,7 @@ WITH transacoes AS (
     INNER JOIN silver.olist.vendedor v ON v.idVendedor = i.idVendedor
     
     WHERE p.descSituacao <> 'canceled'
-    AND p.dtPedido < '2017-06-01'
+    AND p.dtPedido < '{date}'
 ),
 
 acum AS (
@@ -51,7 +47,7 @@ classificacao AS (
 
 SELECT 
     distinct 
-    '2017-06-01' AS dtRef, 
+    '{date}' AS dtRef, 
     c.vendedor AS idVendedor,
 
     count(distinct c.cliente) AS qtdCliente,

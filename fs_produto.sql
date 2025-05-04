@@ -1,8 +1,3 @@
--- Databricks notebook source
-DROP TABLE IF EXISTS sandbox.asn.fs_seller_produto_t5;
-
-CREATE TABLE IF NOT EXISTS sandbox.asn.fs_seller_produto_t5
-
 WITH tb_base AS (
   SELECT 
     --Campos básicos
@@ -29,7 +24,7 @@ WITH tb_base AS (
   LEFT JOIN silver.olist.produto as pr ON ip.idProduto = pr.idProduto
 
   WHERE 1=1
-    AND DATE(p.dtPedido) < '2017-06-01'
+    AND DATE(p.dtPedido) < '{date}'
     AND pr.descCategoria is not null
 ),
 
@@ -134,7 +129,7 @@ group by all
 
 tb_final AS (
     --Join final com todas as tabelas. 998 sellers ao todo
-    SELECT '2017-06-01' AS dtRef,
+    SELECT '{date}' AS dtRef,
       *
     FROM tbFeaturesBase AS t1
     LEFT JOIN tb_topCategoriaSeller AS t2 USING (idVendedor)

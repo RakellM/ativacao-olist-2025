@@ -1,8 +1,3 @@
--- Databricks notebook source
-DROP TABLE IF EXISTS sandbox.asn.fs_seller_pagamento_t5;
-
-CREATE TABLE IF NOT EXISTS sandbox.asn.fs_seller_pagamento_t5
-
 WITH tb_base AS (
   SELECT  v.idVendedor,
           ip.idPedido,
@@ -22,7 +17,7 @@ WITH tb_base AS (
   LEFT JOIN silver.olist.pagamento_pedido AS pp
   ON ip.idPedido = pp.idPedido
 
-  WHERE   p.dtPedido < '2017-06-01'
+  WHERE   p.dtPedido < '{date}'
   GROUP BY ALL
 ),
 
@@ -49,6 +44,6 @@ tb_feat_pagamento AS (
   GROUP BY idVendedor
 )
 
-SELECT  '2017-06-01' AS dtRef,
+SELECT  '{date}' AS dtRef,
         *
 FROM    tb_feat_pagamento;
